@@ -7,6 +7,10 @@ import polyline
 
 from backend.parsers.base import BaseParser
 from backend.schemas.activity import ActivityCreate
+from backend.utils.fitparse_patch import apply_patch
+
+# Apply monkey patch to avoid crashing on Coros FIT valid files with invalid field sizes
+apply_patch()
 
 class CorosParser(BaseParser):
     def parse(self, file_path: str, original_file_hash: str) -> List[ActivityCreate]:

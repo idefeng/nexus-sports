@@ -27,13 +27,17 @@ async def upload_files(files: List[UploadFile] = File(...), db: Session = Depend
         
         # Check idempotency
         existing_record = db.query(ImportRecord).filter(ImportRecord.file_hash == file_hash).first()
-        if existing_record:
+        if existing_record and existing_record.status in ['success', 'skipped']:
             results.append({
                 "filename": file.filename, 
                 "status": "skipped", 
-                "message": "File already imported."
+                "message": "File already imported successfully."
             })
             continue
+        elif existing_record:
+            # Delete the failed/stuck record so we can retry parsing
+            db.delete(existing_record)
+            db.commit()
             
         # Save raw file
         try:
@@ -103,10 +107,16 @@ async def upload_files(files: List[UploadFile] = File(...), db: Session = Depend
             
         except Exception as e:
             db.rollback()
+            
+            # Update the record indicating it failed parsing
+            new_record.status = "failed"
+            new_record.error_message = str(e)
+            db.commit()
+            
             results.append({
                 "filename": file.filename,
                 "status": "error",
-                "message": str(e)
+                "message": f"Parse error: {e}"
             })
             
     return {"results": results}
