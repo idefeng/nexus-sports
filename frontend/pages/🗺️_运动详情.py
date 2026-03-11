@@ -72,7 +72,7 @@ try:
                             # Fit bounds to trace
                             m.fit_bounds(m.get_bounds())
                             
-                            st_folium(m, width=700, height=500, returned_objects=[])
+                            st_folium(m, width=700, height=500, returned_objects=[], key=f"map_{selected_id}")
                         else:
                             st.warning("该记录的 GPS 坐标为空，无法绘制地图。")
                     else:
