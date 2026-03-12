@@ -12,7 +12,19 @@ from backend.utils.fitparse_patch import apply_patch
 # Apply monkey patch to avoid crashing on Coros FIT valid files with invalid field sizes
 apply_patch()
 
-class CorosParser(BaseParser):
+class FitGpxParser(BaseParser):
+    """
+    Generic FIT and GPX parser supporting multiple manufacturers (Coros, Garmin, etc.)
+    """
+    
+    MANUFACTURER_MAP = {
+        1: "Garmin",
+        32: "Wahoo",
+        38: "The Sufferfest",
+        81: "Coros",
+        255: "Development",
+    }
+
     def parse(self, file_path: str, original_file_hash: str) -> List[ActivityCreate]:
         ext = os.path.splitext(file_path)[1].lower()
         if ext == '.fit':
@@ -20,16 +32,23 @@ class CorosParser(BaseParser):
         elif ext == '.gpx':
             return self._parse_gpx(file_path, original_file_hash)
         else:
-            raise ValueError(f"Unsupported file extension {ext} for Coros parser")
+            raise ValueError(f"Unsupported file extension {ext} for FIT/GPX parser")
 
     def _parse_fit(self, file_path: str, original_file_hash: str) -> List[ActivityCreate]:
         fitfile = fitparse.FitFile(file_path)
         activities = []
         
+        # Detect manufacturer
+        source_device = "Unknown FIT Device"
+        for record in fitfile.get_messages('file_id'):
+            manufacturer_id = record.get_value('manufacturer')
+            if manufacturer_id in self.MANUFACTURER_MAP:
+                source_device = self.MANUFACTURER_MAP[manufacturer_id]
+                break
+        
         # Core fields
         activity_type = "Unknown"
         start_time = None
-        end_time = None
         duration_s = 0.0
         distance_m = 0.0
         
@@ -40,29 +59,8 @@ class CorosParser(BaseParser):
         total_ascent_m = None
         calories_kcal = None
         avg_pace_s_per_km = None
-        
-        # Physiological metrics
         training_load = None
         vo2max = None
-        
-        # Field name mapping from FIT session messages
-        session_field_map = {
-            'sport': 'sport',
-            'start_time': 'start_time',
-            'total_elapsed_time': 'total_elapsed_time',
-            'total_distance': 'total_distance',
-            'avg_heart_rate': 'avg_heart_rate',
-            'avg_cadence': 'avg_cadence',
-            'avg_running_cadence': 'avg_cadence',
-            'avg_stride_length': 'avg_stride_length',
-            'total_ascent': 'total_ascent',
-            'total_calories': 'total_calories',
-            'enhanced_avg_speed': 'avg_speed',
-            'avg_speed': 'avg_speed',
-            'total_training_effect': 'training_effect',
-            'training_stress_score': 'training_load',
-        }
-        
         avg_speed = None
         
         # Process session messages
@@ -81,7 +79,6 @@ class CorosParser(BaseParser):
                 elif data.name in ('avg_cadence', 'avg_running_cadence') and data.value:
                     avg_cadence = float(data.value)
                 elif data.name == 'avg_stride_length' and data.value:
-                    # FIT stores stride length in meters (sometimes cm, check unit)
                     val = float(data.value)
                     avg_stride_length_m = val / 100.0 if val > 10 else val
                 elif data.name == 'total_ascent' and data.value:
@@ -95,21 +92,20 @@ class CorosParser(BaseParser):
                 elif data.name == 'training_stress_score' and data.value:
                     if training_load is None:
                         training_load = float(data.value)
+                elif data.name == 'vo2_max' and data.value:
+                    vo2max = float(data.value)
         
-        # Calculate avg pace (s/km) from avg speed (m/s)
         if avg_speed and avg_speed > 0:
             avg_pace_s_per_km = 1000.0 / avg_speed
                     
-        # Extract track points for polyline
         points = []
         for record in fitfile.get_messages('record'):
             lat, lon = None, None
             for data in record:
                 if data.name == 'position_lat' and data.value:
-                    lat = data.value * (180.0 / 2**31)  # semicircles to degrees
+                    lat = data.value * (180.0 / 2**31)
                 elif data.name == 'position_long' and data.value:
                     lon = data.value * (180.0 / 2**31)
-            
             if lat is not None and lon is not None:
                 points.append((lat, lon))
         
@@ -135,7 +131,7 @@ class CorosParser(BaseParser):
             calories_kcal=calories_kcal,
             training_load=training_load,
             vo2max=vo2max,
-            source_device="Coros",
+            source_device=source_device,
             original_file_hash=original_file_hash,
             polyline=poly
         )
@@ -151,11 +147,8 @@ class CorosParser(BaseParser):
                 start_time = track.get_time_bounds().start_time or datetime.now()
                 end_time = track.get_time_bounds().end_time or datetime.now()
                 duration_s = track.get_duration() or 0.0
-                
-                # Length 2d is in meters
                 distance_m = track.length_2d()
                 
-                # Create polyline
                 points = []
                 for segment in track.segments:
                     for point in segment.points:
@@ -168,10 +161,9 @@ class CorosParser(BaseParser):
                     end_time=end_time,
                     duration_s=duration_s,
                     distance_m=distance_m,
-                    source_device="Coros",
+                    source_device="GPX Export",
                     original_file_hash=original_file_hash,
                     polyline=poly
                 )
                 activities.append(activity)
-                
         return activities

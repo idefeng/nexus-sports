@@ -15,6 +15,7 @@ import {
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useStatsTrend, useStatsDistribution } from '../hooks/useQueries';
+import { Skeleton } from '../components/Skeleton';
 
 export const Stats = () => {
   const { t } = useTranslation();
@@ -24,8 +25,6 @@ export const Stats = () => {
   const trend = trendData?.trends || [];
   const dist = distData?.distribution || [];
   const loading = trendLoading || distLoading;
-
-  if (loading) return null;
 
   const COLORS = ['#00F2FF', '#39FF14', '#FF00FF', '#FFFF00', '#FF3131'];
 
@@ -60,21 +59,23 @@ export const Stats = () => {
             <p className="text-slate-500 text-sm tracking-wide">{t('stats.monthly_sub')}</p>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trend}>
-                <defs>
-                  <linearGradient id="colorDist" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00F2FF" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#00F2FF" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val.toFixed(1)}`} />
-                <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#00F2FF' }} formatter={(value: number) => [`${value.toFixed(2)} km`, t('common.distance')]} />
-                <Area type="monotone" dataKey="distance_km" stroke="#00F2FF" strokeWidth={3} fillOpacity={1} fill="url(#colorDist)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {loading ? <Skeleton className="h-full w-full" /> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trend}>
+                  <defs>
+                    <linearGradient id="colorDist" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#00F2FF" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#00F2FF" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val.toFixed(1)}`} />
+                  <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#00F2FF' }} formatter={(value: number) => [`${value.toFixed(2)} km`, t('common.distance')]} />
+                  <Area type="monotone" dataKey="distance_km" stroke="#00F2FF" strokeWidth={3} fillOpacity={1} fill="url(#colorDist)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
 
@@ -90,21 +91,23 @@ export const Stats = () => {
             <p className="text-slate-500 text-sm tracking-wide">{t('stats.monthly_count_sub')}</p>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trend}>
-                <defs>
-                  <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#39FF14" stopOpacity={0.8}/>
-                    <stop offset="100%" stopColor="#39FF14" stopOpacity={0.2}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [value, t('stats.monthly_count')]} />
-                <Bar dataKey="count" fill="url(#barGrad)" radius={[6, 6, 0, 0]} maxBarSize={40} />
-              </BarChart>
-            </ResponsiveContainer>
+            {loading ? <Skeleton className="h-full w-full" /> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={trend}>
+                  <defs>
+                    <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#39FF14" stopOpacity={0.8}/>
+                      <stop offset="100%" stopColor="#39FF14" stopOpacity={0.2}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [value, t('stats.monthly_count')]} />
+                  <Bar dataKey="count" fill="url(#barGrad)" radius={[6, 6, 0, 0]} maxBarSize={40} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
 
@@ -120,24 +123,28 @@ export const Stats = () => {
             <p className="text-slate-500 text-sm tracking-wide">{t('stats.activity_sub')}</p>
           </div>
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={dist} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={8} dataKey="count" nameKey="type">
-                  {dist.map((_entry: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            {loading ? <Skeleton className="h-32 w-32 mx-auto rounded-full" /> : (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={dist} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={8} dataKey="count" nameKey="type">
+                      {dist.map((_entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="flex flex-wrap justify-center gap-4 mt-4">
+                  {dist.map((d: any, i: number) => (
+                    <div key={d.type} className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{d.type}</span>
+                    </div>
                   ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex flex-wrap justify-center gap-4 mt-4">
-              {dist.map((d: any, i: number) => (
-                <div key={d.type} className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{d.type}</span>
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
         </motion.div>
       </div>

@@ -93,3 +93,69 @@ def get_gpx_export(activity_id: int, db: Session = Depends(get_db)):
         media_type="application/gpx+xml",
         headers={"Content-Disposition": f"attachment; filename={export_filename}"}
     )
+
+
+from pydantic import BaseModel
+from typing import List
+import zipfile
+import tempfile
+import time
+
+class BatchExportRequest(BaseModel):
+    activity_ids: List[int]
+
+@router.post("/batch")
+def batch_export_gpx(payload: BatchExportRequest, db: Session = Depends(get_db)):
+    """Export multiple activities as GPX files inside a single ZIP archive."""
+    if not payload.activity_ids:
+        raise HTTPException(status_code=400, detail="No activity IDs provided")
+        
+    activities = db.query(Activity).filter(Activity.id.in_(payload.activity_ids)).all()
+    if not activities:
+        raise HTTPException(status_code=404, detail="No activities found for provided IDs")
+        
+    # Create a temporary ZIP file
+    zip_buffer = io.BytesIO()
+    
+    with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
+        for activity in activities:
+            if not activity.polyline:
+                continue
+                
+            # Logic similar to single GPX export
+            try:
+                coordinates = polyline.decode(activity.polyline)
+            except:
+                continue
+                
+            gpx = gpxpy.gpx.GPX()
+            gpx_track = gpxpy.gpx.GPXTrack(name=f"{activity.activity_type} - {activity.start_time.strftime('%Y-%m-%d')}")
+            gpx.tracks.append(gpx_track)
+            gpx_segment = gpxpy.gpx.GPXTrackSegment()
+            gpx_track.segments.append(gpx_segment)
+            
+            num_points = len(coordinates)
+            start_time = activity.start_time
+            duration_per_point = activity.duration_s / max(num_points, 1) if activity.duration_s else 0
+            
+            from datetime import timedelta
+            current_time = start_time
+            for lat, lon in coordinates:
+                gpx_segment.points.append(gpxpy.gpx.GPXTrackPoint(latitude=lat, longitude=lon, time=current_time))
+                if current_time:
+                    current_time += timedelta(seconds=duration_per_point)
+            
+            xml_str = gpx.to_xml()
+            filename = f"nexus_sports_{activity.id}_{activity.start_time.strftime('%Y%m%d')}.gpx"
+            zip_file.writestr(filename, xml_str)
+            
+    zip_buffer.seek(0)
+    
+    zip_filename = f"nexus_sports_export_{int(time.time())}.zip"
+    
+    return Response(
+        content=zip_buffer.getvalue(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={zip_filename}"}
+    )
+

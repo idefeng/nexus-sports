@@ -3,19 +3,27 @@ import { Upload, File, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useUploadFiles } from '../hooks/useQueries';
+import { useToast } from '../components/Toast';
 
 interface UploadResult {
   filename: string;
   status: 'success' | 'failed' | 'skipped';
   message: string;
+  activities?: {
+    type: string;
+    start_time: string;
+    distance_m: number;
+  }[];
 }
 
 export const Import = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [files, setFiles] = useState<File[]>([]);
   const [results, setResults] = useState<UploadResult[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const isZh = i18n.language.startsWith('zh');
 
+  const toast = useToast();
   const uploadMutation = useUploadFiles();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +57,7 @@ export const Import = () => {
       const data = await uploadMutation.mutateAsync(files);
       setResults(data.results || []);
       setFiles([]);
+      toast.success(isZh ? '处理完成' : 'Processing complete');
     } catch (error) {
       console.error('Upload failed', error);
     }
@@ -144,6 +153,23 @@ export const Import = () => {
                   <div>
                     <p className="text-sm font-bold text-white">{res.filename}</p>
                     <p className="text-xs text-slate-500 uppercase">{res.message}</p>
+                    
+                    {res.activities && res.activities.length > 0 && (
+                      <div className="mt-3 space-y-1 border-t border-white/5 pt-2">
+                        {res.activities.slice(0, 3).map((act, j) => (
+                          <div key={j} className="flex items-center gap-2 text-[10px] text-slate-400 font-mono">
+                            <span className="text-cyber-cyan">{act.type}</span>
+                            <span>•</span>
+                            <span>{new Date(act.start_time).toLocaleDateString()}</span>
+                            <span>•</span>
+                            <span>{(act.distance_m / 1000).toFixed(2)} km</span>
+                          </div>
+                        ))}
+                        {res.activities.length > 3 && (
+                          <p className="text-[10px] text-slate-500 italic">...and {res.activities.length - 3} more</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

@@ -16,9 +16,9 @@ export interface Activity {
   total_descent_m?: number;
   training_load?: number;
   recovery_time_h?: number;
-  vo2max?: number;
-  source_device?: string;
   polyline?: string;
+  notes?: string;
+  source_device?: string;
   is_failed?: boolean;
 }
 

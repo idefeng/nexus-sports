@@ -9,8 +9,6 @@ from backend.core.database import get_db
 from backend.models.activity import ImportRecord, Activity
 from backend.utils.hash import calculate_bytes_hash
 from backend.services.storage import save_uploaded_file
-from backend.parsers.coros import CorosParser
-from backend.parsers.huawei import HuaweiParser
 
 router = APIRouter()
 
@@ -108,13 +106,8 @@ async def upload_files(files: List[UploadFile] = File(...), db: Session = Depend
             db.refresh(new_record)
             
             # Select Parser
-            ext = os.path.splitext(file.filename)[1].lower()
-            if ext in ['.fit', '.gpx']:
-                parser = CorosParser()
-            elif ext == '.zip':
-                parser = HuaweiParser()
-            else:
-                raise Exception(f"Unsupported file format {ext}")
+            from backend.parsers.factory import ParserFactory
+            parser = ParserFactory.get_parser(saved_path)
             
             # Parse activities
             parsed_activities = parser.parse(saved_path, file_hash)
@@ -149,6 +142,15 @@ async def upload_files(files: List[UploadFile] = File(...), db: Session = Depend
             if skipped > 0:
                 status_msg += f" Skipped {skipped} duplicates."
             
+            # Collect some metadata for G4
+            activity_summaries = []
+            for act in parsed_activities:
+                activity_summaries.append({
+                    "type": act.activity_type,
+                    "start_time": act.start_time.isoformat(),
+                    "distance_m": act.distance_m
+                })
+
             logger.info("Upload success: %s — %d imported, %d skipped", file.filename, count, skipped)
             
             results.append({
@@ -157,6 +159,7 @@ async def upload_files(files: List[UploadFile] = File(...), db: Session = Depend
                 "record_id": new_record.id,
                 "activities_imported": count,
                 "activities_skipped": skipped,
+                "activities": activity_summaries,  # New feedback data
                 "message": status_msg
             })
             

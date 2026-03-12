@@ -39,6 +39,7 @@ class Activity(Base):
     # Metadata
     source_device = Column(String)  # e.g., Huawei, Coros
     original_file_hash = Column(String, unique=True, index=True)  # For idempotency
+    notes = Column(String, nullable=True)
     
     created_at = Column(DateTime, default=_utcnow)
     updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)

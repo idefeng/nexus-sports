@@ -21,6 +21,7 @@ class ActivityBase(BaseModel):
     vo2max: Optional[float] = None
     
     polyline: Optional[str] = None
+    notes: Optional[str] = None
     source_device: str
     original_file_hash: str
 

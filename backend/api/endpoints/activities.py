@@ -11,7 +11,7 @@ router = APIRouter()
 @router.get("/", response_model=Dict[str, Any])
 def get_activities(
     skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(50, ge=1, le=200, description="Max records to return"),
+    limit: int = Query(50, ge=1, le=1000, description="Max records to return"),
     activity_type: Optional[str] = Query(None, description="Filter by activity type"),
     db: Session = Depends(get_db)
 ):

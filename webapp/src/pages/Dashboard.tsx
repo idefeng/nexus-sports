@@ -16,8 +16,9 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { MetricCard } from '../components/MetricCard';
 import { useActivities, useStatsSummary, useLatestAIReport } from '../hooks/useQueries';
+import { MetricCard } from '../components/MetricCard';
+import { DashboardSkeleton } from '../components/Skeleton';
 
 // Sport-specific icon mapping
 const SPORT_ICONS: Record<string, typeof Trophy> = {
@@ -63,11 +64,7 @@ export const Dashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-cyber-cyan"></div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

@@ -68,6 +68,16 @@ export const activityService = {
 
   getOriginalFileUrl: (activityId: number) => `/api/v1/export/original/${activityId}`,
   getGpxExportUrl: (activityId: number) => `/api/v1/export/gpx/${activityId}`,
+  batchExport: async (ids: number[]) => {
+    const response = await api.post('/export/batch', { activity_ids: ids }, { responseType: 'blob' });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `nexus_sports_batch_${Date.now()}.zip`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  },
 };
 
 export default api;

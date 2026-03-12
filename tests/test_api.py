@@ -109,3 +109,84 @@ class TestUploadEndpoint:
         data = resp.json()
         result = data["results"][0]
         assert result["status"] in ("success", "skipped")
+
+
+class TestPatchEndpoint:
+    def test_patch_activity_not_found(self, client):
+        resp = client.patch("/api/v1/activities/99999", json={"activity_type": "Swimming"})
+        assert resp.status_code == 404
+
+    def test_patch_activity_type(self, client, sample_fit_path):
+        """Upload a file, then PATCH the activity type."""
+        # First upload a file to create an activity
+        with open(sample_fit_path, "rb") as f:
+            filename = os.path.basename(sample_fit_path)
+            client.post(
+                "/api/v1/upload",
+                files=[("files", (filename, f.read(), "application/octet-stream"))]
+            )
+
+        # Get activities to find the ID
+        resp = client.get("/api/v1/activities?limit=1")
+        activities = resp.json()["items"]
+        if len(activities) == 0:
+            pytest.skip("No activities created from upload")
+
+        activity_id = activities[0]["id"]
+
+        # PATCH the activity type
+        resp = client.patch(f"/api/v1/activities/{activity_id}", json={"activity_type": "Swimming"})
+        assert resp.status_code == 200
+        assert resp.json()["activity_type"] == "Swimming"
+
+        # Verify the change persisted
+        resp = client.get(f"/api/v1/activities/{activity_id}")
+        assert resp.json()["activity_type"] == "Swimming"
+
+
+class TestCRUDLifecycle:
+    def test_full_crud_lifecycle(self, client, sample_fit_path):
+        """Test complete Create → Read → Update → Delete lifecycle."""
+        # CREATE: Upload file
+        with open(sample_fit_path, "rb") as f:
+            filename = os.path.basename(sample_fit_path)
+            resp = client.post(
+                "/api/v1/upload",
+                files=[("files", (filename, f.read(), "application/octet-stream"))]
+            )
+        assert resp.status_code == 200
+
+        # READ: Get activities
+        resp = client.get("/api/v1/activities")
+        data = resp.json()
+        assert data["total"] > 0
+        activity_id = data["items"][0]["id"]
+
+        # READ single
+        resp = client.get(f"/api/v1/activities/{activity_id}")
+        assert resp.status_code == 200
+        assert resp.json()["id"] == activity_id
+
+        # UPDATE: PATCH activity
+        resp = client.patch(f"/api/v1/activities/{activity_id}", json={"activity_type": "Cycling"})
+        assert resp.status_code == 200
+        assert resp.json()["activity_type"] == "Cycling"
+
+        # DELETE: Remove activity
+        resp = client.delete(f"/api/v1/activities/{activity_id}")
+        assert resp.status_code == 200
+
+        # Verify deletion
+        resp = client.get(f"/api/v1/activities/{activity_id}")
+        assert resp.status_code == 404
+
+
+class TestExportEndpoint:
+    def test_export_original_not_found(self, client):
+        resp = client.get("/api/v1/export/original/99999")
+        assert resp.status_code == 404
+
+    def test_export_gpx_not_found(self, client):
+        resp = client.get("/api/v1/export/gpx/99999")
+        assert resp.status_code == 404
+

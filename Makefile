@@ -19,7 +19,7 @@ dev: ## Start both backend + frontend (requires 2 terminals)
 	@echo "  make frontend"
 
 backend: ## Start backend API server
-	. .venv/bin/activate && uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+	. .venv/bin/activate && uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload --reload-dir backend
 
 frontend: ## Start React webapp dev server
 	cd webapp && npm run dev
