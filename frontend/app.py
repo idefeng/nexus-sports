@@ -1,3 +1,5 @@
+import streamlit as st
+import requests
 import pandas as pd
 from datetime import datetime
 from ui_components import apply_cyber_theme, render_metric_card, section_header
