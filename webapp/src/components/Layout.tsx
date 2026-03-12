@@ -57,10 +57,12 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
         <div className="p-6 space-y-4">
           <LanguageSwitcher />
-          <button className="flex items-center gap-3 text-slate-500 hover:text-white transition-colors">
+          <Link to="/settings" className={`flex items-center gap-3 transition-colors ${
+            location.pathname === '/settings' ? 'text-cyber-cyan' : 'text-slate-500 hover:text-white'
+          }`}>
             <Settings size={20} />
             <span className="font-medium">{t('common.settings')}</span>
-          </button>
+          </Link>
         </div>
       </aside>
 

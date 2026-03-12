@@ -1,15 +1,70 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Any, Optional
 
 from backend.core.database import get_db
 from backend.models.activity import Activity
-from backend.schemas.activity import ActivityResponse
+from backend.schemas.activity import ActivityResponse, ActivityUpdate
 
 router = APIRouter()
 
-@router.get("/", response_model=List[ActivityResponse])
-def get_activities(db: Session = Depends(get_db)):
-    # For MVP, just return the list of all activities
-    activities = db.query(Activity).order_by(Activity.start_time.desc()).all()
-    return activities
+@router.get("/", response_model=Dict[str, Any])
+def get_activities(
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(50, ge=1, le=200, description="Max records to return"),
+    activity_type: Optional[str] = Query(None, description="Filter by activity type"),
+    db: Session = Depends(get_db)
+):
+    """Get paginated list of activities."""
+    query = db.query(Activity)
+    
+    if activity_type:
+        query = query.filter(Activity.activity_type == activity_type)
+    
+    total = query.count()
+    activities = query.order_by(Activity.start_time.desc()).offset(skip).limit(limit).all()
+    
+    return {
+        "total": total,
+        "skip": skip,
+        "limit": limit,
+        "items": [ActivityResponse.model_validate(a) for a in activities]
+    }
+
+
+@router.get("/{activity_id}", response_model=ActivityResponse)
+def get_activity(activity_id: int, db: Session = Depends(get_db)):
+    """Get a single activity by ID."""
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    return activity
+
+
+@router.delete("/{activity_id}")
+def delete_activity(activity_id: int, db: Session = Depends(get_db)):
+    """Delete a single activity by ID."""
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    
+    db.delete(activity)
+    db.commit()
+    return {"status": "success", "message": f"Activity {activity_id} deleted."}
+
+
+@router.patch("/{activity_id}", response_model=ActivityResponse)
+def update_activity(activity_id: int, payload: ActivityUpdate, db: Session = Depends(get_db)):
+    """Partially update an activity (PATCH semantics)."""
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    update_data = payload.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        if hasattr(activity, field):
+            setattr(activity, field, value)
+
+    db.commit()
+    db.refresh(activity)
+    return activity

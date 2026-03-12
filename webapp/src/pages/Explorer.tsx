@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -7,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import polyline from 'polyline';
 import { activityService } from '../services/api';
 import type { Activity } from '../types';
-import { Map as MapIcon } from 'lucide-react';
+import { Map as MapIcon, Download, FileDown } from 'lucide-react';
 
 // Fix for default marker icons in Leaflet + Spark
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -31,13 +32,15 @@ const ChangeView = ({ center, bounds }: { center: L.LatLngExpression, bounds?: L
 
 export const Explorer = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [coords, setCoords] = useState<[number, number][]>([]);
 
   useEffect(() => {
-    activityService.getActivities().then(data => {
-      const withPoly = data.filter((a: Activity) => a.polyline);
+    activityService.getActivities(0, 200).then(data => {
+      const allActivities = data.items || [];
+      const withPoly = allActivities.filter((a: Activity) => a.polyline);
       setActivities(withPoly);
       if (withPoly.length > 0) handleSelect(withPoly[0]);
     });
@@ -67,6 +70,7 @@ export const Explorer = () => {
             <div 
               key={act.id}
               onClick={() => handleSelect(act)}
+              onDoubleClick={() => navigate(`/activity/${act.id}`)}
               className={`
                 glass-card p-4 cursor-pointer border transition-all
                 ${selectedActivity?.id === act.id ? 'border-cyber-cyan bg-cyber-cyan/5' : 'border-white/5 hover:border-white/20'}
@@ -120,7 +124,7 @@ export const Explorer = () => {
             animate={{ y: 0, opacity: 1 }}
             className="absolute bottom-6 left-6 right-6 glass-card p-6 bg-obsidian-light/90 z-[1000] border-t-cyber-cyan/30"
           >
-            <div className="grid grid-cols-4 gap-8">
+            <div className="grid grid-cols-5 gap-8">
               <div>
                 <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">{t('explorer.heart_rate')}</p>
                 <p className="text-xl font-black text-white">{selectedActivity.avg_heart_rate?.toFixed(0) || '--'} <span className="text-xs text-cyber-cyan">{t('common.bpm')}</span></p>
@@ -136,6 +140,24 @@ export const Explorer = () => {
               <div>
                 <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">{t('explorer.training_load')}</p>
                 <p className="text-xl font-black text-white">{selectedActivity.training_load?.toFixed(1) || '--'}</p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <a 
+                  href={activityService.getOriginalFileUrl(selectedActivity.id)} 
+                  className="flex items-center gap-1.5 text-xs font-bold text-cyber-cyan bg-cyber-cyan/10 px-3 py-1.5 rounded-lg hover:bg-cyber-cyan/20 transition-colors"
+                  download
+                >
+                  <Download size={12} />
+                  {t('explorer.download_original', 'Original')}
+                </a>
+                <a 
+                  href={activityService.getGpxExportUrl(selectedActivity.id)} 
+                  className="flex items-center gap-1.5 text-xs font-bold text-cyber-green bg-cyber-green/10 px-3 py-1.5 rounded-lg hover:bg-cyber-green/20 transition-colors"
+                  download
+                >
+                  <FileDown size={12} />
+                  {t('explorer.export_gpx', 'GPX')}
+                </a>
               </div>
             </div>
           </motion.div>

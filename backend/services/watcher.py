@@ -2,7 +2,12 @@ import os
 import time
 import requests
 import argparse
+import logging
 from pathlib import Path
+
+from backend.core.config import settings
+
+logger = logging.getLogger("nexus_sports.watcher")
 
 # Try importing watchdog, if not installed we will poll manually
 try:
@@ -11,9 +16,9 @@ try:
     HAS_WATCHDOG = True
 except ImportError:
     HAS_WATCHDOG = False
-    print("watchdog package not found. Falling back to simple polling.")
+    logger.warning("watchdog package not found. Falling back to simple polling.")
 
-API_URL = "http://localhost:8000/api/v1"
+API_URL = settings.BACKEND_API_URL
 SUPPORTED_EXTENSIONS = {'.fit', '.gpx', '.zip'}
 PROCESSED_FILES = set()
 
@@ -26,7 +31,7 @@ def upload_file(filepath: str):
     if str(path_obj.absolute()) in PROCESSED_FILES:
         return
         
-    print(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Detected new file: {path_obj.name}")
+    logger.info("Detected new file: %s", path_obj.name)
     
     try:
         # Prevent reading file that is still being written to disk
@@ -42,16 +47,16 @@ def upload_file(filepath: str):
                 status = res.get('status')
                 msg = res.get('message')
                 if status == 'success':
-                    print(f"  -> Successfully imported: {msg}")
+                    logger.info("  -> Successfully imported: %s", msg)
                 elif status == 'skipped':
-                    print(f"  -> Skipped (duplicate): {msg}")
+                    logger.info("  -> Skipped (duplicate): %s", msg)
                 else:
-                    print(f"  -> Error parsing: {msg}")
+                    logger.warning("  -> Error parsing: %s", msg)
         else:
-            print(f"  -> Server returned error {resp.status_code}: {resp.text}")
+            logger.error("  -> Server returned error %d: %s", resp.status_code, resp.text)
             
     except Exception as e:
-        print(f"  -> Failed to upload {path_obj.name}: {e}")
+        logger.error("  -> Failed to upload %s: %s", path_obj.name, e)
         
     finally:
         # Mark as processed regardless of failure to avoid infinite loops

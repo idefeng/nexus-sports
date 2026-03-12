@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Upload, File, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { activityService } from '../services/api';
+import { useUploadFiles } from '../hooks/useQueries';
 
 interface UploadResult {
   filename: string;
@@ -13,8 +13,10 @@ interface UploadResult {
 export const Import = () => {
   const { t } = useTranslation();
   const [files, setFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState<UploadResult[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const uploadMutation = useUploadFiles();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -22,18 +24,33 @@ export const Import = () => {
     }
   };
 
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFiles = Array.from(e.dataTransfer.files).filter(
+      f => f.name.endsWith('.fit') || f.name.endsWith('.gpx') || f.name.endsWith('.zip')
+    );
+    if (droppedFiles.length > 0) setFiles(droppedFiles);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
   const handleUpload = async () => {
     if (files.length === 0) return;
-    setUploading(true);
     setResults([]);
     try {
-      const data = await activityService.uploadFiles(files);
+      const data = await uploadMutation.mutateAsync(files);
       setResults(data.results || []);
       setFiles([]);
     } catch (error) {
       console.error('Upload failed', error);
-    } finally {
-      setUploading(false);
     }
   };
 
@@ -53,7 +70,16 @@ export const Import = () => {
         <p className="text-slate-500 font-medium mt-2 uppercase tracking-widest text-sm italic">{t('import.sub')}</p>
       </header>
 
-      <div className="glass-card p-10 border-dashed border-2 border-white/5 hover:border-cyber-cyan/30 transition-all text-center group">
+      <div 
+        className={`glass-card p-10 border-dashed border-2 transition-all text-center group ${
+          isDragging 
+            ? 'border-cyber-cyan bg-cyber-cyan/5 scale-[1.02]' 
+            : 'border-white/5 hover:border-cyber-cyan/30'
+        }`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+      >
         <input 
           type="file" 
           id="file-upload" 
@@ -63,7 +89,9 @@ export const Import = () => {
           onChange={handleFileChange}
         />
         <label htmlFor="file-upload" className="cursor-pointer block">
-          <File className="mx-auto text-slate-600 mb-4 group-hover:text-cyber-cyan group-hover:scale-110 transition-all" size={48} />
+          <File className={`mx-auto mb-4 transition-all ${
+            isDragging ? 'text-cyber-cyan scale-125' : 'text-slate-600 group-hover:text-cyber-cyan group-hover:scale-110'
+          }`} size={48} />
           <p className="text-lg font-bold text-white mb-1 uppercase tracking-tight">{t('import.select_files')}</p>
           <p className="text-slate-500 text-sm italic">{t('import.drag_drop')}</p>
         </label>
@@ -78,15 +106,16 @@ export const Import = () => {
               <div key={f.name} className="flex items-center gap-2 text-xs font-mono text-cyber-cyan bg-cyber-cyan/5 px-3 py-2 rounded-lg">
                 <File size={14} />
                 {f.name}
+                <span className="ml-auto text-slate-500">{(f.size / 1024).toFixed(0)} KB</span>
               </div>
             ))}
             <button 
               onClick={handleUpload}
-              disabled={uploading}
+              disabled={uploadMutation.isPending}
               className="mt-6 cyber-button w-full flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              {uploading ? <Loader2 className="animate-spin" size={20} /> : <Upload size={20} />}
-              {uploading ? t('import.processing') : t('import.initialize')}
+              {uploadMutation.isPending ? <Loader2 className="animate-spin" size={20} /> : <Upload size={20} />}
+              {uploadMutation.isPending ? t('import.processing') : t('import.initialize')}
             </button>
           </motion.div>
         )}
@@ -101,9 +130,17 @@ export const Import = () => {
           >
             <h3 className="text-sm font-black text-slate-500 tracking-widest uppercase mb-4">{t('import.results')}</h3>
             {results.map((res, i) => (
-              <div key={i} className="glass-card p-4 flex items-center justify-between border-l-4 border-l-cyber-cyan">
+              <div key={i} className={`glass-card p-4 flex items-center justify-between border-l-4 ${
+                res.status === 'success' ? 'border-l-cyber-green' : res.status === 'skipped' ? 'border-l-yellow-500' : 'border-l-red-500'
+              }`}>
                 <div className="flex items-center gap-3">
-                  {res.status === 'success' ? <CheckCircle2 className="text-cyber-green" size={18} /> : <AlertCircle className="text-red-500" size={18} />}
+                  {res.status === 'success' ? (
+                    <CheckCircle2 className="text-cyber-green" size={18} />
+                  ) : res.status === 'skipped' ? (
+                    <AlertCircle className="text-yellow-500" size={18} />
+                  ) : (
+                    <AlertCircle className="text-red-500" size={18} />
+                  )}
                   <div>
                     <p className="text-sm font-bold text-white">{res.filename}</p>
                     <p className="text-xs text-slate-500 uppercase">{res.message}</p>

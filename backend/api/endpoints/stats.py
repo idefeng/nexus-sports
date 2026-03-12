@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List, Dict, Any
-from datetime import datetime, timedelta
+from typing import Dict, Any
 
 from backend.core.database import get_db
 from backend.models.activity import Activity
@@ -34,20 +33,29 @@ def get_stats_summary(db: Session = Depends(get_db)):
 
 @router.get("/trend", response_model=Dict[str, Any])
 def get_stats_trend(db: Session = Depends(get_db)):
-    """Get distance trends aggregated by month."""
-    activities = db.query(Activity.start_time, Activity.distance_m).all()
+    """Get distance and count trends aggregated by month — computed at SQL level."""
+    # Use strftime for SQLite, date_trunc for PostgreSQL  
+    month_col = func.strftime("%Y-%m", Activity.start_time).label("month")
     
-    # Process grouping in Python for SQLite compatibility
-    trends = {}
-    for start_time, distance in activities:
-        if start_time and distance:
-            month_key = start_time.strftime("%Y-%m")
-            trends[month_key] = trends.get(month_key, 0) + (distance / 1000)
-            
-    # Sort by month
-    sorted_trends = [{"month": k, "distance_km": round(v, 2)} for k, v in sorted(trends.items())]
+    results = db.query(
+        month_col,
+        func.sum(Activity.distance_m).label("total_distance"),
+        func.count(Activity.id).label("count"),
+        func.sum(Activity.duration_s).label("total_duration"),
+    ).group_by(month_col).order_by(month_col).all()
     
-    return {"trends": sorted_trends}
+    trends = [
+        {
+            "month": r.month,
+            "distance_km": round((r.total_distance or 0) / 1000, 2),
+            "count": r.count,
+            "duration_hours": round((r.total_duration or 0) / 3600, 2),
+        }
+        for r in results
+        if r.month  # skip null start_time rows
+    ]
+    
+    return {"trends": trends}
 
 @router.get("/distribution", response_model=Dict[str, Any])
 def get_activity_distribution(db: Session = Depends(get_db)):

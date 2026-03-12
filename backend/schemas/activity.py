@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 
@@ -27,13 +27,23 @@ class ActivityBase(BaseModel):
 class ActivityCreate(ActivityBase):
     pass
 
+class ActivityUpdate(BaseModel):
+    """Partial update schema — all fields optional."""
+    activity_type: Optional[str] = None
+    distance_m: Optional[float] = None
+    duration_s: Optional[float] = None
+    calories_kcal: Optional[float] = None
+    avg_heart_rate: Optional[float] = None
+    avg_cadence: Optional[float] = None
+    total_ascent_m: Optional[float] = None
+    notes: Optional[str] = None
+
 class ActivityResponse(ActivityBase):
     id: int
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ImportRecordResponse(BaseModel):
     id: int
@@ -43,5 +53,4 @@ class ImportRecordResponse(BaseModel):
     error_message: Optional[str]
     imported_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -33,6 +33,7 @@ export interface MonthlyTrend {
   month: string;
   distance_km: number;
   count: number;
+  duration_hours: number;
 }
 
 export interface TypeDistribution {

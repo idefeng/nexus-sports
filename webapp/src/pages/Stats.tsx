@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { 
   XAxis, 
   YAxis, 
@@ -9,40 +8,32 @@ import {
   Pie,
   Cell,
   AreaChart,
-  Area
+  Area,
+  BarChart,
+  Bar
 } from 'recharts';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { activityService } from '../services/api';
-import type { MonthlyTrend, TypeDistribution } from '../types';
+import { useStatsTrend, useStatsDistribution } from '../hooks/useQueries';
 
 export const Stats = () => {
   const { t } = useTranslation();
-  const [trend, setTrend] = useState<MonthlyTrend[]>([]);
-  const [dist, setDist] = useState<TypeDistribution[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: trendData, isLoading: trendLoading } = useStatsTrend();
+  const { data: distData, isLoading: distLoading } = useStatsDistribution();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [trendData, distData] = await Promise.all([
-          activityService.getStatsTrend(),
-          activityService.getStatsDistribution()
-        ]);
-        setTrend(trendData.trends || []);
-        setDist(distData.distribution || []);
-      } catch (error) {
-        console.error('Failed to fetch stats data', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const trend = trendData?.trends || [];
+  const dist = distData?.distribution || [];
+  const loading = trendLoading || distLoading;
 
   if (loading) return null;
 
   const COLORS = ['#00F2FF', '#39FF14', '#FF00FF', '#FFFF00', '#FF3131'];
+
+  const tooltipStyle = {
+    backgroundColor: '#121216',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '12px',
+  };
 
   return (
     <div className="space-y-10">
@@ -58,7 +49,7 @@ export const Stats = () => {
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Trend Chart */}
+        {/* Distance Trend Chart */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -78,43 +69,51 @@ export const Stats = () => {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis 
-                  dataKey="month" 
-                  stroke="#64748b" 
-                  fontSize={12} 
-                  tickLine={false} 
-                  axisLine={false}
-                />
-                <YAxis 
-                  stroke="#64748b" 
-                  fontSize={12} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickFormatter={(val) => `${val}k`}
-                />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#121216', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                  itemStyle={{ color: '#00F2FF' }}
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="distance_km" 
-                  stroke="#00F2FF" 
-                  strokeWidth={3}
-                  fillOpacity={1} 
-                  fill="url(#colorDist)" 
-                />
+                <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val.toFixed(1)}`} />
+                <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#00F2FF' }} formatter={(value: number) => [`${value.toFixed(2)} km`, t('common.distance')]} />
+                <Area type="monotone" dataKey="distance_km" stroke="#00F2FF" strokeWidth={3} fillOpacity={1} fill="url(#colorDist)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </motion.div>
 
-        {/* Distribution Chart */}
+        {/* Monthly Count Bar Chart */}
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.05 }}
+          className="glass-card p-8 min-h-[400px]"
+        >
+          <div className="mb-8">
+            <h3 className="text-xl font-bold text-white tracking-tight uppercase">{t('stats.monthly_count')}</h3>
+            <p className="text-slate-500 text-sm tracking-wide">{t('stats.monthly_count_sub')}</p>
+          </div>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trend}>
+                <defs>
+                  <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#39FF14" stopOpacity={0.8}/>
+                    <stop offset="100%" stopColor="#39FF14" stopOpacity={0.2}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [value, t('stats.monthly_count')]} />
+                <Bar dataKey="count" fill="url(#barGrad)" radius={[6, 6, 0, 0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Distribution Donut Chart */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="glass-card p-8 min-h-[400px]"
+          className="glass-card p-8 min-h-[400px] lg:col-span-2"
         >
           <div className="mb-8">
             <h3 className="text-xl font-bold text-white tracking-tight uppercase">{t('stats.activity_profile')}</h3>
@@ -123,27 +122,16 @@ export const Stats = () => {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie
-                  data={dist}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={100}
-                  paddingAngle={8}
-                  dataKey="count"
-                  nameKey="type"
-                >
-                  {dist.map((_entry, index) => (
+                <Pie data={dist} cx="50%" cy="50%" innerRadius={60} outerRadius={100} paddingAngle={8} dataKey="count" nameKey="type">
+                  {dist.map((_entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#121216', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
-                />
+                <Tooltip contentStyle={tooltipStyle} />
               </PieChart>
             </ResponsiveContainer>
             <div className="flex flex-wrap justify-center gap-4 mt-4">
-              {dist.map((d, i) => (
+              {dist.map((d: any, i: number) => (
                 <div key={d.type} className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">{d.type}</span>
