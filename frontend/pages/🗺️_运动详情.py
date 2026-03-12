@@ -4,12 +4,16 @@ import pandas as pd
 import folium
 from streamlit_folium import st_folium
 import polyline
+from frontend.ui_components import apply_cyber_theme, section_header, render_metric_card
 
 st.set_page_config(page_title="运动详情 - Nexus Sports", page_icon="🗺️", layout="wide")
 
 API_URL = "http://localhost:8000/api/v1"
 
-st.title("🗺️ 运动数据详情与轨迹")
+# Apply theme
+apply_cyber_theme()
+
+section_header("🗺️ 运动轨迹详情", "探索您的运动地理足迹")
 
 # Sidebar navigation
 try:
@@ -23,31 +27,31 @@ try:
             df['开始时间'] = pd.to_datetime(df['start_time']).dt.strftime('%Y-%m-%d %H:%M')
             
             # Format display options for selectbox
-            options = df.apply(lambda row: f"ID: {row['id']} | {row['开始时间']} | {row['activity_type']} | {row['distance_m']/1000:.2f}公里", axis=1).tolist()
+            options = df.apply(lambda row: f"ID: {row['id']} | {row['开始时间']} | {row['activity_type']} | {row['distance_m']/1000:.2f}km", axis=1).tolist()
             
-            st.sidebar.markdown("### 选择运动记录")
-            selected_option = st.sidebar.selectbox("浏览活动列表：", options)
+            st.sidebar.markdown("### 🔍 筛选活动")
+            selected_option = st.sidebar.selectbox("浏览活动列表：", options, label_visibility="collapsed")
             
             # Extract selected ID
             if selected_option:
                 selected_id = int(selected_option.split(" | ")[0].replace("ID: ", ""))
                 selected_activity = df[df['id'] == selected_id].iloc[0]
                 
-                # --- Top Metrics ---
-                cols = st.columns(4)
-                cols[0].metric("🏃 主要指标", f"{selected_activity['distance_m']/1000:.2f} 公里", f"{selected_activity['activity_type']}")
-                cols[1].metric("⏱️ 时长", f"{selected_activity['duration_s']/60:.1f} 分钟")
-                
-                calories = selected_activity.get('calories_kcal')
-                cols[2].metric("🔥 卡路里消耗", f"{calories:.0f} kcal" if pd.notna(calories) else "N/A")
-                
-                device = selected_activity.get('source_device', '未知设备')
-                cols[3].metric("⌚ 数据来源", device)
+                # --- Top Metrics Row ---
+                m1, m2, m3, m4 = st.columns(4)
+                with m1:
+                    render_metric_card("距离", f"{selected_activity['distance_m']/1000:.2f} km", "🏃")
+                with m2:
+                    render_metric_card("配速", f"{selected_activity['activity_type']}", "👟", "green")
+                with m3:
+                    render_metric_card("运动时长", f"{selected_activity['duration_s']/60:.1f} min", "⏱️")
+                with m4:
+                    render_metric_card("数据来源", selected_activity.get('source_device', '未知设备'), "⌚", "green")
 
-                st.divider()
+                st.markdown("<br>", unsafe_allow_html=True)
 
                 # --- Map & Details Row ---
-                map_col, det_col = st.columns([2, 1])
+                map_col, det_col = st.columns([2.2, 1])
                 
                 with map_col:
                     poly_str = selected_activity.get('polyline')
@@ -55,55 +59,67 @@ try:
                         coordinates = polyline.decode(poly_str)
                         if coordinates:
                             # Start map centered at the first point
-                            m = folium.Map(location=coordinates[0], zoom_start=13, tiles="cartodbpositron")
+                            m = folium.Map(
+                                location=coordinates[0], 
+                                zoom_start=14, 
+                                tiles="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+                                attr='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                            )
                             
                             # Draw polyline
                             folium.PolyLine(
                                 coordinates,
-                                weight=4,
-                                color="blue",
-                                opacity=0.8
+                                weight=5,
+                                color="#00F2FF",
+                                opacity=0.9
                             ).add_to(m)
                             
-                            # Add start and end markers
-                            folium.Marker(coordinates[0], popup="Start", icon=folium.Icon(color="green", icon="play")).add_to(m)
-                            folium.Marker(coordinates[-1], popup="End", icon=folium.Icon(color="red", icon="stop")).add_to(m)
+                            # Add start and end markers with neon colors
+                            folium.CircleMarker(coordinates[0], radius=8, color="#39FF14", fill=True, fill_color="#39FF14", popup="Start").add_to(m)
+                            folium.CircleMarker(coordinates[-1], radius=8, color="#FF00FF", fill=True, fill_color="#FF00FF", popup="End").add_to(m)
                             
-                            # Fit bounds to trace
+                            # Fit bounds
                             m.fit_bounds(m.get_bounds())
                             
-                            st_folium(m, width=700, height=500, returned_objects=[], key=f"map_{selected_id}")
+                            st_folium(m, width=750, height=550, returned_objects=[], key=f"map_{selected_id}")
                         else:
-                            st.warning("该记录的 GPS 坐标为空，无法绘制地图。")
+                            st.warning("该记录的 GPS 坐标为空。")
                     else:
                         st.info("📌 该运动没有关联的 GPS 轨迹数据（可能是在室内或设备未记录）。")
                         
                 with det_col:
-                    st.subheader("📊 进阶指标")
+                    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    st.subheader("📊 进阶生理指标")
                     
+                    def quick_stat(label, val, unit=""):
+                        st.markdown(f"""
+                        <div style="margin-bottom: 15px;">
+                            <div style="color: rgba(255,255,255,0.5); font-size: 0.8rem;">{label}</div>
+                            <div style="color: white; font-size: 1.2rem; font-weight: 600;">{val} <span style="font-size: 0.8rem; color: #00F2FF;">{unit}</span></div>
+                        </div>
+                        """, unsafe_allow_html=True)
+
                     hr = selected_activity.get('avg_heart_rate')
-                    st.write(f"**平均心率**：{f'{hr:.1f} bpm' if pd.notna(hr) else '无数据'}")
+                    quick_stat("平均心率", f"{hr:.1f}" if pd.notna(hr) else "N/A", "bpm")
                     
                     cad = selected_activity.get('avg_cadence')
-                    st.write(f"**平均步频**：{f'{cad:.1f} spm' if pd.notna(cad) else '无数据'}")
-                    
-                    stride = selected_activity.get('avg_stride_length_m')
-                    st.write(f"**平均步幅**：{f'{stride:.2f} m' if pd.notna(stride) else '无数据'}")
+                    quick_stat("平均步频", f"{cad:.1f}" if pd.notna(cad) else "N/A", "spm")
                     
                     ascent = selected_activity.get('total_ascent_m')
-                    st.write(f"**总爬升**：{f'{ascent:.1f} m' if pd.notna(ascent) else '无数据'}")
-                    
-                    st.divider()
-                    st.subheader("🔋 生理分析")
+                    quick_stat("总爬升", f"{ascent:.1f}" if pd.notna(ascent) else "N/A", "m")
                     
                     load = selected_activity.get('training_load')
-                    st.write(f"**训练负荷**：{f'{load:.1f}' if pd.notna(load) else '无数据'}")
+                    quick_stat("训练负荷 (TL)", f"{load:.1f}" if pd.notna(load) else "N/A")
+
+                    st.markdown("<hr style='border-color: rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
                     
                     rec = selected_activity.get('recovery_time_h')
-                    st.write(f"**建议恢复时间**：{f'{rec:.1f} 小时' if pd.notna(rec) else '无数据'}")
+                    quick_stat("建议恢复时长", f"{rec:.1f}" if pd.notna(rec) else "N/A", "hours")
                     
                     vo = selected_activity.get('vo2max')
-                    st.write(f"**VO2 Max估算**：{f'{vo:.1f}' if pd.notna(vo) else '无数据'}")
+                    quick_stat("VO2 Max", f"{vo:.1f}" if pd.notna(vo) else "N/A")
+                    
+                    st.markdown('</div>', unsafe_allow_html=True)
 
     else:
         st.error("加载活动数据失败。")
