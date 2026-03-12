@@ -1,6 +1,6 @@
 import pandas as pd
 from datetime import datetime
-from frontend.ui_components import apply_cyber_theme, render_metric_card, section_header
+from ui_components import apply_cyber_theme, render_metric_card, section_header
 
 st.set_page_config(page_title="Nexus Sports", page_icon="🏃", layout="wide")
 

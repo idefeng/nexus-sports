@@ -4,7 +4,7 @@ import pandas as pd
 import folium
 from streamlit_folium import st_folium
 import polyline
-from frontend.ui_components import apply_cyber_theme, section_header, render_metric_card
+from ui_components import apply_cyber_theme, section_header, render_metric_card
 
 st.set_page_config(page_title="运动详情 - Nexus Sports", page_icon="🗺️", layout="wide")
 

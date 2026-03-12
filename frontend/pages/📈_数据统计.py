@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import pandas as pd
 import plotly.express as px
-from frontend.ui_components import apply_cyber_theme, section_header, render_metric_card
+from ui_components import apply_cyber_theme, section_header, render_metric_card
 
 st.set_page_config(page_title="数据统计 - Nexus Sports", page_icon="📈", layout="wide")
 
