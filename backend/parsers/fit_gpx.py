@@ -22,6 +22,7 @@ class FitGpxParser(BaseParser):
         32: "Wahoo",
         38: "The Sufferfest",
         81: "Coros",
+        294: "Coros",
         255: "Development",
     }
 
@@ -45,6 +46,14 @@ class FitGpxParser(BaseParser):
             if manufacturer_id in self.MANUFACTURER_MAP:
                 source_device = self.MANUFACTURER_MAP[manufacturer_id]
                 break
+        
+        # Backup identification via product_name string
+        if source_device == "Unknown FIT Device":
+            for record in fitfile.get_messages('file_id'):
+                pname = record.get_value('product_name')
+                if pname and "COROS" in str(pname).upper():
+                    source_device = str(pname)
+                    break
         
         # Core fields
         activity_type = "Unknown"
