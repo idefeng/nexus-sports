@@ -6,6 +6,13 @@ from backend.core.config import settings, logger
 
 @asynccontextmanager
 async def lifespan(application: FastAPI):
+    # Ensure database tables exist
+    from backend.core.database import engine, Base
+    from backend.models.activity import Activity, ImportRecord  # Import models to register them with Base
+    
+    logger.info("Initializing database tables...")
+    Base.metadata.create_all(bind=engine)
+    
     logger.info(
         "Nexus Sports API started | env=%s | cors=%s",
         settings.ENVIRONMENT,
