@@ -71,7 +71,11 @@ export const Stats = () => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val.toFixed(1)}`} />
-                  <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#00F2FF' }} formatter={(value: number) => [`${value.toFixed(2)} km`, t('common.distance')]} />
+                  <Tooltip 
+                    contentStyle={tooltipStyle} 
+                    itemStyle={{ color: '#00F2FF' }} 
+                    formatter={(value: any) => [`${Number(value).toFixed(2)} km`, t('common.distance')]} 
+                  />
                   <Area type="monotone" dataKey="distance_km" stroke="#00F2FF" strokeWidth={3} fillOpacity={1} fill="url(#colorDist)" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -103,7 +107,10 @@ export const Stats = () => {
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                   <XAxis dataKey="month" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                  <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [value, t('stats.monthly_count')]} />
+                  <Tooltip 
+                    contentStyle={tooltipStyle} 
+                    formatter={(value: any) => [value, t('stats.monthly_count')]} 
+                  />
                   <Bar dataKey="count" fill="url(#barGrad)" radius={[6, 6, 0, 0]} maxBarSize={40} />
                 </BarChart>
               </ResponsiveContainer>
