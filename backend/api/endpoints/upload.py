@@ -147,7 +147,7 @@ async def upload_files(files: List[UploadFile] = File(...), db: Session = Depend
             for act in parsed_activities:
                 activity_summaries.append({
                     "type": act.activity_type,
-                    "start_time": act.start_time.isoformat(),
+                    "start_time": act.start_time.isoformat() if act.start_time else None,
                     "distance_m": act.distance_m
                 })
 
@@ -180,4 +180,6 @@ async def upload_files(files: List[UploadFile] = File(...), db: Session = Depend
                 "message": f"Parse error: {e}"
             })
             
+    # Final debug log for response serialization
+    logger.info("Upload task finished. Returning %d results.", len(results))
     return {"results": results}

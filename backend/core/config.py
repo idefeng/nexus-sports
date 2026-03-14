@@ -18,14 +18,14 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:8080,http://localhost:5173,http://localhost:5174,http://localhost:3000"
     
     # Storage
-    DATA_DIR: str = "data"
-    ARCHIVE_DIR: str = "data/archived_files"
+    DATA_DIR: str = "/app/data"
+    ARCHIVE_DIR: str = "/app/data/archived_files"
     
     # Upload limits
-    MAX_UPLOAD_SIZE_MB: int = 50
+    MAX_UPLOAD_SIZE_MB: int = 100
     
     # Database
-    DATABASE_URL: str = "sqlite:///./data/nexus_sports.db"
+    DATABASE_URL: str = "sqlite:////app/data/nexus_sports.db"
     
     # Backend API URL (used by watcher and other services)
     BACKEND_API_URL: str = "http://localhost:8000/api/v1"
