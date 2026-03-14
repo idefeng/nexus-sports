@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     
     # CORS - configurable allowed origins
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:5174,http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:8080,http://localhost:5173,http://localhost:5174,http://localhost:3000"
     
     # Storage
     DATA_DIR: str = "data"

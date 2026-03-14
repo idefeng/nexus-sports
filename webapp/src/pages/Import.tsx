@@ -58,8 +58,9 @@ export const Import = () => {
       setResults(data.results || []);
       setFiles([]);
       toast.success(isZh ? '处理完成' : 'Processing complete');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload failed', error);
+      toast.error(isZh ? `上传失败: ${error.message}` : `Upload failed: ${error.message}`);
     }
   };
 
