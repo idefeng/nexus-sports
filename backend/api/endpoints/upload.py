@@ -48,7 +48,7 @@ def _validate_file(filename: str, content: bytes) -> None:
         raise HTTPException(status_code=400, detail="Uploaded file is empty.")
 
 
-@router.post("/")
+@router.post("")
 async def upload_files(files: List[UploadFile] = File(...), db: Session = Depends(get_db)):
     results = []
     
