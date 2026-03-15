@@ -117,7 +117,15 @@ sudo certbot --nginx -d sports.everyservice.online
 3. **启动容器**: 
    ```bash
    docker compose up -d --build
-   # 或者旧版本：docker-compose up -d --build
+   ```
+
+4. **初始化并创建账号**:
+   ```bash
+   # 初始化数据库表
+   docker compose exec backend python -m backend.init_db
+
+   # 创建管理员账号 (请替换为您自己的用户名和密码)
+   docker compose exec backend python -m backend.create_admin <用户名> <密码>
    ```
 
 
