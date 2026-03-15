@@ -1,9 +1,9 @@
 import os
 import zipfile
-from typing import Optional
 from backend.parsers.base import BaseParser
 from backend.parsers.fit_gpx import FitGpxParser
 from backend.parsers.huawei import HuaweiParser
+from backend.parsers.zip_batch import ZipBatchParser
 
 
 class ParserFactory:
@@ -24,8 +24,8 @@ class ParserFactory:
                     # Huawei Health export signature
                     if any("MotionPathDetail" in f for f in filenames):
                         return HuaweiParser()
-            
-            # Default to Huawei or raise error if other ZIPs are not supported
-            return HuaweiParser()
+                
+                # If it's a ZIP but not Huawei, treat as a batch of sports files
+                return ZipBatchParser()
 
         raise ValueError(f"No parser available for extension {ext}")
