@@ -1,8 +1,9 @@
 from fastapi import APIRouter
-from backend.api.endpoints import upload, activities, stats, export, agent
+from backend.api.endpoints import upload, activities, stats, export, agent, auth
 
 api_router = APIRouter()
 
+api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
 api_router.include_router(upload.router, prefix="/upload", tags=["Upload"])
 api_router.include_router(activities.router, prefix="/activities", tags=["Activities"])
 api_router.include_router(stats.router, prefix="/stats", tags=["Stats"])
