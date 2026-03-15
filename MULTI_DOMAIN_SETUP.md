@@ -37,34 +37,54 @@ sudo apt install nginx
 ```
 
 ### 2.2 创建站点配置
-由于您已经有 `jpgo` 在运行，您的主机上应该已经安装了 Nginx。只需为新域名增加一个配置文件：
+参考您已有的 `jpgo` 配置，请创建文件 `/etc/nginx/sites-available/nexus-sports`:
 ```bash
 sudo nano /etc/nginx/sites-available/nexus-sports
 ```
 
-填入以下内容：
+填入以下内容（已根据您的服务器环境进行优化）：
 ```nginx
 server {
     listen 80;
     server_name sports.everyservice.online;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name sports.everyservice.online;
+
+    # SSL 证书路径 (由于还没运行 certbot，此处先填占位，运行后 certbot 会自动修改)
+    # ssl_certificate /etc/letsencrypt/live/sports.everyservice.online/fullchain.pem;
+    # ssl_certificate_key /etc/letsencrypt/live/sports.everyservice.online/privkey.pem;
+
+    # 继承您 jpgo 的安全配置
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_tickets off;
+
+    add_header Strict-Transport-Security "max-age=63072000" always;
 
     location / {
-        proxy_pass http://127.0.0.1:8080; # 对应前端容器映射的端口
+        proxy_pass http://127.0.0.1:8080; # 本项目的 Docker 前端端口
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
     }
 
-    # API 转发（前端容器内部已有代理，但如果直接访问后端可配置此处）
-    location /api/ {
-        proxy_pass http://127.0.0.1:8000/api/; 
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        client_max_body_size 100M;
-    }
+    # API 转发 (前端容器内其实已经封装了代理，此处直接转发根目录即可)
+    # 如果遇到大文件上传限制，请在 server 段添加：client_max_body_size 100M;
 }
 ```
+
 
 ### 2.3 启用配置
 ```bash
