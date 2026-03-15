@@ -68,3 +68,24 @@ def update_activity(activity_id: int, payload: ActivityUpdate, db: Session = Dep
     db.commit()
     db.refresh(activity)
     return activity
+
+
+@router.post("/maintenance/clear-all")
+def clear_all_data(db: Session = Depends(get_db)):
+    """Wipe all activity data and import records from the system."""
+    from backend.models.activity import ImportRecord
+    from backend.services.storage import clear_all_archives
+    
+    try:
+        # Delete from DB
+        db.query(Activity).delete()
+        db.query(ImportRecord).delete()
+        db.commit()
+        
+        # Delete from Filesystem
+        clear_all_archives()
+        
+        return {"status": "success", "message": "All activity data cleared successfully."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

@@ -21,6 +21,11 @@ export const activityService = {
     const response = await api.patch(`/activities/${id}`, data);
     return response.data;
   },
+
+  clearAllActivities: async () => {
+    const response = await api.post('/activities/maintenance/clear-all');
+    return response.data;
+  },
   
   getStatsSummary: async () => {
     const response = await api.get('/stats/summary');

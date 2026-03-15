@@ -19,3 +19,16 @@ def delete_archived_file(filepath: str) -> None:
             os.remove(filepath)
         except OSError:
             pass
+
+def clear_all_archives() -> None:
+    """Removes all files from the archive directory."""
+    if os.path.exists(settings.ARCHIVE_DIR):
+        for filename in os.listdir(settings.ARCHIVE_DIR):
+            file_path = os.path.join(settings.ARCHIVE_DIR, filename)
+            try:
+                if os.path.isfile(file_path) or os.path.islink(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception:
+                pass
