@@ -2,16 +2,15 @@
 
 针对您已有一台运行 Docker 的 Ubuntu 服务器且需要部署多个域名的场景，本指南详细说明如何通过 **Nginx 反向代理** 实现 `sports.everyservice.online` 的部署。
 
-## 场景假设
-- 已有域名: `https://jpgo.everyservice.online/` (已在运行)
-- 新域名: `https://sports.everyservice.online/`
-- 系统环境: Ubuntu
+## 场景现状与端口规划
+- **已有域名**: `https://jpgo.everyservice.online/`
+    - 主机端口 `3000` 已被 `app-jpgo-backend-1` 占用。
+- **新域名**: `https://sports.everyservice.online/`
+- **端口分配建议**:
+    - 前端容器: 主机 `8080` -> 容器 `80`
+    - 后端容器: 主机 `8000` -> 容器 `8000`
+    - *这两个端口与您现有的 3000 端口没有冲突，可以放心使用。*
 
----
-
-## 1. 端口与网络准备
-
-为了避免与现有容器冲突，本系统将使用不同的主机端口（默认为 8080 和 8000）。
 
 ### 2.1 修改 `docker-compose.yml` (可选)
 如果您的 8080 或 8000 端口已被其他程序占用，请修改 `docker-compose.yml` 中的 `ports` 映射：
@@ -38,7 +37,7 @@ sudo apt install nginx
 ```
 
 ### 2.2 创建站点配置
-创建文件 `/etc/nginx/sites-available/nexus-sports`:
+由于您已经有 `jpgo` 在运行，您的主机上应该已经安装了 Nginx。只需为新域名增加一个配置文件：
 ```bash
 sudo nano /etc/nginx/sites-available/nexus-sports
 ```
