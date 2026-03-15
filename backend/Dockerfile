@@ -16,10 +16,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the current directory contents into the container at /app
-# We copy everything, but the working directory is /app
-# To make "from backend..." imports work, we need the backend directory to be inside the python path.
-# Since we are in /app, let's copy the backend source code specifically or the whole root.
 COPY . .
+
 
 # Create directory for data storage
 RUN mkdir -p backend/data
