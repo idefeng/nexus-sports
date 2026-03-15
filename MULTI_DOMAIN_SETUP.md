@@ -71,6 +71,11 @@ server {
     # 设置允许上传的文件大小限制（如 100M）
     client_max_body_size 100M;
 
+    # 设置超时时间（防止处理大型 ZIP 文件时出现 504 错误）
+    proxy_read_timeout 300s;
+    proxy_connect_timeout 300s;
+    proxy_send_timeout 300s;
+
     location / {
         proxy_pass http://127.0.0.1:8080; # 本项目的 Docker 前端端口
         proxy_set_header Host $host;
