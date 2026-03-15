@@ -94,5 +94,13 @@ server {
   ```
 
 ---
+## 5. 多域名冲突处理 (Ubuntu)
+
+如果您在同一台服务器上运行多个项目（如 `sports.everyservice.online` 和其他域名），建议使用 Nginx 反向代理统一管理。
+
+详细操作请参考：[MULTI_DOMAIN_SETUP.md](file:///Users/idefeng/DEV/nexus-sports/MULTI_DOMAIN_SETUP.md)
+
+---
 > [!IMPORTANT]
 > 部署后，请务必修改默认的管理员密码（如果系统有内置初始账号）。
+
