@@ -68,6 +68,9 @@ server {
 
     add_header Strict-Transport-Security "max-age=63072000" always;
 
+    # 设置允许上传的文件大小限制（如 100M）
+    client_max_body_size 100M;
+
     location / {
         proxy_pass http://127.0.0.1:8080; # 本项目的 Docker 前端端口
         proxy_set_header Host $host;
