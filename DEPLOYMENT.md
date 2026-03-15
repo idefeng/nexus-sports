@@ -40,7 +40,17 @@ docker-compose up -d --build
 2. 构建后端（FastAPI 服务于 8000 端口）。
 3. 进行运行前的健康检查。
 
-### 2.4 验证部署
+### 2.4 初始化数据库与创建用户
+在容器启动后，需要初始化数据库并创建第一个管理员账号：
+```bash
+# 进入后端容器
+docker compose exec backend python -m backend.init_db
+
+# 创建管理员账号 (默认账号: admin, 默认密码: admin123)
+docker compose exec backend python -m backend.create_admin admin admin123
+```
+
+### 2.5 验证部署
 检查容器运行状态：
 ```bash
 docker-compose ps
