@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: ./backend/Dockerfile
-    container_name: nexus-backend
+    container_name: nexus-sports-backend
     ports:
       - "8000:8000"
     volumes:
@@ -15,7 +15,7 @@ services:
   frontend:
     build:
       context: ./webapp
-    container_name: nexus-frontend
+    container_name: nexus-sports-frontend
     ports:
       - "8080:80"
     depends_on:

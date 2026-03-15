@@ -19,11 +19,17 @@ class FitGpxParser(BaseParser):
     
     MANUFACTURER_MAP = {
         1: "Garmin",
+        15: "Suunto",
+        22: "Polar",
+        31: "Polar",
         32: "Wahoo",
         38: "The Sufferfest",
         81: "Coros",
+        254: "Huawei",
         294: "Coros",
         255: "Development",
+        265: "Apple",
+        266: "Apple",
     }
 
     def parse(self, file_path: str, original_file_hash: str) -> List[ActivityCreate]:
@@ -36,24 +42,39 @@ class FitGpxParser(BaseParser):
             raise ValueError(f"Unsupported file extension {ext} for FIT/GPX parser")
 
     def _parse_fit(self, file_path: str, original_file_hash: str) -> List[ActivityCreate]:
+        from backend.core.config import logger
         fitfile = fitparse.FitFile(file_path)
         activities = []
         
         # Detect manufacturer
         source_device = "Unknown FIT Device"
+        manufacturer_id = None
+        product_name = None
+        
         for record in fitfile.get_messages('file_id'):
             manufacturer_id = record.get_value('manufacturer')
+            product_name = record.get_value('product_name')
             if manufacturer_id in self.MANUFACTURER_MAP:
                 source_device = self.MANUFACTURER_MAP[manufacturer_id]
                 break
         
-        # Backup identification via product_name string
+        # Backup check in device_info if file_id search failed
         if source_device == "Unknown FIT Device":
-            for record in fitfile.get_messages('file_id'):
-                pname = record.get_value('product_name')
-                if pname and "COROS" in str(pname).upper():
-                    source_device = str(pname)
+            for record in fitfile.get_messages('device_info'):
+                manufacturer_id = record.get_value('manufacturer')
+                if manufacturer_id in self.MANUFACTURER_MAP:
+                    source_device = self.MANUFACTURER_MAP[manufacturer_id]
                     break
+        
+        # Backup identification via product_name string
+        if source_device == "Unknown FIT Device" or source_device == "Development":
+            if product_name and "COROS" in str(product_name).upper():
+                source_device = str(product_name)
+            elif product_name:
+                source_device = str(product_name)
+
+        logger.info("FIT Device detection: manufacturer=%s, product=%s -> %s", 
+                    manufacturer_id, product_name, source_device)
         
         # Core fields
         activity_type = "Unknown"

@@ -92,7 +92,9 @@ async def upload_files(files: List[UploadFile] = File(...), db: Session = Depend
         # Save raw file
         new_record = None
         try:
-            saved_path = save_uploaded_file(content, file.filename)
+            # Use hash as prefix to ensure uniqueness and avoid collision during batch processing
+            unique_name = f"{file_hash[:10]}_{file.filename}"
+            saved_path = save_uploaded_file(content, unique_name)
             
             # Create import record
             new_record = ImportRecord(
