@@ -1,11 +1,4 @@
-import axios from 'axios';
-
-const api = axios.create({
-  baseURL: '/api/v1',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+import api from '../lib/axios';
 
 export const activityService = {
   getActivities: async (skip = 0, limit = 200) => {
