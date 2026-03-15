@@ -109,9 +109,17 @@ sudo certbot --nginx -d sports.everyservice.online
 
 ## 4. 自动化部署流程 (在项目目录下)
 
+> [!NOTE]
+> 在较新的 Docker 版本中，命令已从 `docker-compose` (带连字符) 升级为 `docker compose` (不带连字符)。如果提示命令找不到，请尝试后者。
+
 1. **同步代码**: `git pull`
 2. **配置环境**: `cp .env.example .env` (修改 `CORS_ORIGINS=https://sports.everyservice.online`)
-3. **启动容器**: `docker-compose up -d --build`
+3. **启动容器**: 
+   ```bash
+   docker compose up -d --build
+   # 或者旧版本：docker-compose up -d --build
+   ```
+
 
 ---
 
