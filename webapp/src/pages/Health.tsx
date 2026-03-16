@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Heart, Plus, Trash2, Activity } from 'lucide-react';
+import { Plus, Trash2, Activity } from 'lucide-react';
 import api from '../lib/axios';
 
 interface BodyMetrics {
