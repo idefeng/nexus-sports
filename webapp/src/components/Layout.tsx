@@ -5,7 +5,8 @@ import {
   Map as MapIcon, 
   Upload, 
   Settings, 
-  Activity
+  Activity,
+  Heart
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -19,6 +20,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
     { path: '/', icon: LayoutDashboard, label: t('common.dashboard') },
     { path: '/stats', icon: BarChart3, label: t('common.statistics') },
     { path: '/explorer', icon: MapIcon, label: t('common.explorer') },
+    { path: '/health', icon: Heart, label: t('common.health') },
     { path: '/import', icon: Upload, label: t('common.import') },
   ];
 

@@ -6,6 +6,7 @@ import { Explorer } from './pages/Explorer';
 import { Import } from './pages/Import';
 import { ActivityDetail } from './pages/ActivityDetail';
 import { SettingsPage } from './pages/Settings';
+import { Health } from './pages/Health';
 import { Login } from './pages/Login';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
@@ -25,6 +26,7 @@ function App() {
                   <Route path="/explorer" element={<Explorer />} />
                   <Route path="/import" element={<Import />} />
                   <Route path="/activity/:id" element={<ActivityDetail />} />
+                  <Route path="/health" element={<Health />} />
                   <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
               </Layout>

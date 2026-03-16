@@ -9,7 +9,8 @@ async def lifespan(application: FastAPI):
     # Ensure database tables exist
     from backend.core.database import engine, Base
     from backend.models.activity import Activity, ImportRecord
-    from backend.models.user import User  # Import models to register them with Base
+    from backend.models.user import User
+    from backend.models.metrics import BodyMetrics  # Register BodyMetrics model
     
     logger.info("Initializing database tables...")
     Base.metadata.create_all(bind=engine)

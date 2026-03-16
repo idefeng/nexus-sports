@@ -11,6 +11,7 @@ const resources = {
         explorer: 'Explorer',
         import: 'Import',
         settings: 'Settings',
+        health: 'Health Metrics',
         total_sessions: 'Total Sessions',
         cumulative_distance: 'Cumulative Distance',
         training_time: 'Training Time',
@@ -30,7 +31,16 @@ const resources = {
         min: 'min',
         km: 'km',
         h: 'h',
-        kcal: 'kcal'
+        kcal: 'kcal',
+        weight: 'Weight',
+        height: 'Height',
+        bust: 'Bust',
+        waist: 'Waist',
+        hips: 'Hips',
+        recorded_at: 'Date',
+        add_record: 'Add Record',
+        history: 'History',
+        latest: 'Latest Indicators'
       },
       stats: {
         header: 'Analytics',
@@ -90,6 +100,7 @@ const resources = {
         explorer: '运动浏览器',
         import: '导入数据',
         settings: '设置',
+        health: '健康数据',
         total_sessions: '总运动次数',
         cumulative_distance: '累计距离',
         training_time: '累计时长',
@@ -109,7 +120,16 @@ const resources = {
         min: '分钟',
         km: '公里',
         h: '小时',
-        kcal: '千卡'
+        kcal: '千卡',
+        weight: '体重',
+        height: '身高',
+        bust: '胸围',
+        waist: '腰围',
+        hips: '臀围',
+        recorded_at: '记录日期',
+        add_record: '新增记录',
+        history: '历史记录',
+        latest: '最新指标'
       },
       stats: {
         header: '分析',
